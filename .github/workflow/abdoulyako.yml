@@ -1,0 +1,54 @@
+name: Intégration Continue
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  test-mon-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Récupérer le code du dépôt sur le runner
+      - name: Cloner le dépôt
+        uses: actions/checkout@v4
+
+      # 2. Configurer l'environnement (ex: Node.js)
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 3. Exécuter les commandes du projet
+      - name: Installer les dépendances et tester
+        run: |
+          npm ci
+          npm test
+    # À ajouter tout en bas de la section "steps:"
+      - name: Notifier Discord en cas d'erreur
+        if: failure()
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: failure
+          title: "Échec des tests sur le projet !"
+  # Job 2 : Le déploiement (CD)
+  deploy:
+    needs: build-and-test # Attend que les tests soient 100% verts
+    if: github.ref == 'refs/heads/main' # Ne déploie que sur la branche main (pas sur les PR)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Déployer sur le serveur via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/mon-projet
+            git pull origin main
+            npm ci --production
+            pm2 restart mon-app
