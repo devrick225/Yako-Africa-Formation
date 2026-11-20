@@ -1,15 +1,18 @@
-# YAKO AFRICA — application de départ
+# YAKO AFRICA — corrigé du lab
 
-Support du lab React → Docker → GitHub Actions → Render.
-
-Node 22.12 minimum recommandé dans la branche Node 22 ; utiliser une version compatible maintenue.
+Application React/Vite, construction Docker multi-stage, Nginx sur 10000 et CI GitHub Actions.
 
 ```bash
 npm ci
-npm run dev
 npm run build
+docker build --build-arg APP_VERSION=local-v1 -t yako-react:v1 .
+docker run --rm yako-react:v1 nginx -t
+docker run -d --name yako-react-local -p 127.0.0.1:8080:10000 yako-react:v1
 ```
 
-Les cartes de l’équipe sont chargées depuis src/participants/*.js. Chaque fichier exporte un objet avec nom, role et message. Le compteur du navigateur est temporaire. Le terminal affiché est un schéma pédagogique, pas le résultat réel de la CI.
+Ouvrir http://localhost:8080, /health et /version.txt.
+Nettoyage : docker rm -f yako-react-local
 
-Ne copier dans le dépôt que les fichiers de ce dossier, pas le dossier parent de formation. Suivre le manuel du formateur pour ajouter Docker et GitHub Actions progressivement. Aucun backend ni variable secrète n’est requis.
+Render : Git Provider → dépôt → branche main → Docker → port 10000 → health /health → After CI Checks Pass. Attendre la CI verte de main avant la création. Le service Render reconstruit sa propre image.
+
+Ce dossier est un corrigé de référence. Ne pas l’ajouter comme sous-dossier au dépôt du lab. Le manuel explique le déroulement complet, le travail par PR et le rollback.
